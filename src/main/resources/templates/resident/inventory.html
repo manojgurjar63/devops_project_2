@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Shop Inventory · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <style>
+        /* ── Item card clickable ── */
+        .item-card { cursor: pointer; }
+        .item-card:active { transform: scale(0.97); }
+        .item-card.in-cart { border-color: #2e7d32; background: #f1f8f1; }
+        .item-card.in-cart::after { transform: scaleX(1); background: linear-gradient(90deg,#2e7d32,#66bb6a); }
+        .item-qty-badge { position: absolute; top: 10px; right: 10px; background: #1a237e; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+        .item-card.in-cart .item-qty-badge { display: flex; }
+
+        /* ── Cart FAB ── */
+        #cartFab {
+            position: fixed; bottom: 28px; right: 28px; z-index: 100;
+            background: linear-gradient(135deg,#1a237e,#3949ab);
+            color: white; border: none; border-radius: 50px;
+            padding: 14px 22px; font-size: 15px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 6px 24px rgba(26,35,126,0.35);
+            display: flex; align-items: center; gap: 10px;
+            transition: all 0.22s cubic-bezier(.4,0,.2,1);
+        }
+        #cartFab:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 10px 32px rgba(26,35,126,0.45); }
+        #cartFab .fab-count { background: #ffca28; color: #1a237e; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+
+        /* ── Cart Drawer ── */
+        #cartOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 150; backdrop-filter: blur(3px); }
+        #cartOverlay.open { display: block; }
+        #cartDrawer {
+            position: fixed; top: 0; right: -420px; bottom: 0; width: 400px; max-width: 95vw;
+            background: white; z-index: 160; box-shadow: -8px 0 40px rgba(0,0,0,0.18);
+            display: flex; flex-direction: column;
+            transition: right 0.32s cubic-bezier(.4,0,.2,1);
+        }
+        #cartDrawer.open { right: 0; }
+
+        .cart-header { padding: 22px 24px; border-bottom: 2px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg,#1a237e,#3949ab); color: white; }
+        .cart-header h3 { font-size: 17px; font-weight: 800; }
+        .cart-close { background: rgba(255,255,255,0.15); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .cart-close:hover { background: rgba(255,255,255,0.3); }
+
+        .cart-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .cart-empty { text-align: center; padding: 60px 20px; color: #ccc; }
+        .cart-empty .ce-icon { font-size: 52px; margin-bottom: 12px; opacity: 0.5; }
+
+        .cart-item { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px; background: #f8f9ff; border: 1.5px solid #e8eaf6; margin-bottom: 10px; transition: all 0.2s; animation: fadeUp 0.25s ease; }
+        .cart-item:hover { border-color: #9fa8da; }
+        .ci-icon { font-size: 26px; flex-shrink: 0; }
+        .ci-info { flex: 1; min-width: 0; }
+        .ci-name { font-size: 14px; font-weight: 700; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ci-price { font-size: 13px; color: #2e7d32; font-weight: 700; margin-top: 2px; }
+        .ci-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .ci-btn { width: 28px; height: 28px; border-radius: 8px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .ci-btn.minus { background: #fdecea; color: #c62828; }
+        .ci-btn.minus:hover { background: #c62828; color: white; }
+        .ci-btn.plus  { background: #e8f5e9; color: #2e7d32; }
+        .ci-btn.plus:hover  { background: #2e7d32; color: white; }
+        .ci-qty { font-size: 15px; font-weight: 800; min-width: 20px; text-align: center; }
+
+        .cart-footer { padding: 18px 24px; border-top: 2px solid #f0f0f0; background: #fafafa; }
+        .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .cart-total span { font-size: 15px; color: #555; font-weight: 600; }
+        .cart-total strong { font-size: 22px; font-weight: 900; color: #1a237e; }
+        .cart-actions { display: flex; gap: 10px; }
+        .cart-actions .btn { flex: 1; justify-content: center; padding: 12px; font-size: 14px; }
+    </style>
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Resident Portal</div>
+    <nav class="sidebar-nav">
+        <a th:href="@{/web/resident/dashboard}" class="nav-item"><span class="ni">🏠</span> Dashboard</a>
+        <a href="#" class="nav-item active"><span class="ni">📦</span> Shop Items</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">🛒 Shop Inventory</div>
+            <div class="dash-subtitle">Tap an item to add it to your cart</div>
+        </div>
+        <div class="header-right">
+            <div class="search-wrap">
+                <input type="text" id="itemSearch" placeholder="Search items... (press /)" oninput="filterItems()" />
+            </div>
+            <a th:href="@{/web/resident/dashboard}" class="btn btn-outline btn-sm">← Back</a>
+            <div class="avatar" title="Resident">R</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div class="card">
+            <div class="card-header">
+                <h3>📦 Available Items</h3>
+                <span class="badge-pill badge-blue" id="itemCount" th:text="${items.size()} + ' items'"></span>
+            </div>
+            <div th:if="${items.empty}" class="empty-state">
+                <div class="empty-icon">📦</div><p>No items available in this shop right now.</p>
+            </div>
+            <div class="item-grid" id="itemGrid" th:if="${!items.empty}">
+                <div class="item-card" th:each="item : ${items}"
+                     th:attr="data-name=${item.name}, data-id=${item.id}, data-price=${item.price}, data-unit=${item.unit}"
+                     onclick="addToCart(this)">
+                    <span class="item-qty-badge" id="badge-[[${item.id}]]">1</span>
+                    <div class="item-card-top">
+                        <div class="item-icon">🛍️</div>
+                        <div class="item-name" th:text="${item.name}"></div>
+                    </div>
+                    <div class="item-desc" th:text="${item.description}">—</div>
+                    <div class="item-footer">
+                        <span class="price-tag" th:text="'₹' + ${item.price}"></span>
+                        <span class="item-unit" th:text="${item.unit}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart FAB -->
+<button id="cartFab" onclick="openCart()" style="display:none;">
+    🛒 My Cart <span class="fab-count" id="fabCount">0</span>
+</button>
+
+<!-- Cart Drawer -->
+<div id="cartOverlay" onclick="closeCart()"></div>
+<div id="cartDrawer">
+    <div class="cart-header">
+        <h3>🛒 My Cart</h3>
+        <button class="cart-close" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-body" id="cartBody">
+        <div class="cart-empty">
+            <div class="ce-icon">🛒</div>
+            <p>Your cart is empty.<br>Tap items to add them.</p>
+        </div>
+    </div>
+    <div class="cart-footer">
+        <div class="cart-total">
+            <span>Total</span>
+            <strong id="cartTotal">₹0.00</strong>
+        </div>
+        <!-- Payment Method -->
+        <div style="margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:8px;">Payment Method</div>
+            <div style="display:flex;gap:10px;">
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;cursor:pointer;transition:all 0.2s;" id="lbl-cod">
+                    <input type="radio" name="paymentMethod" value="COD" checked onchange="selectPayment('COD')" style="width:auto;" />
+                    <span>💵 Cash on Delivery</span>
+                </label>
+                <label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;cursor:pointer;transition:all 0.2s;" id="lbl-upi">
+                    <input type="radio" name="paymentMethod" value="UPI" onchange="selectPayment('UPI')" style="width:auto;" />
+                    <span>📱 UPI</span>
+                </label>
+            </div>
+            <div id="upiInfo" style="display:none;margin-top:10px;background:#f0f8ff;border:1.5px solid #90caf9;border-radius:10px;padding:12px 14px;">
+                <div style="font-size:12px;color:#555;margin-bottom:4px;">Pay to UPI ID:</div>
+                <div id="upiIdDisplay" style="font-size:16px;font-weight:800;color:#1a237e;letter-spacing:0.5px;"></div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">Pay before or at delivery. Show screenshot to shopkeeper.</div>
+            </div>
+        </div>
+        <div class="cart-actions">
+            <button class="btn btn-outline btn-sm" onclick="clearCart()">🗑 Clear</button>
+            <button class="btn btn-success" id="placeOrderBtn" th:data-shopid="${shopId}" th:data-upiid="${shop != null ? shop.upiId : ''}" onclick="placeOrder()">✅ Place Order</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+<script>
+    // ── Cart state ──
+    const cart = {}; // { id: { name, price, unit, qty } }
+
+    function addToCart(card) {
+        const id    = card.dataset.id;
+        const name  = card.dataset.name;
+        const price = parseFloat(card.dataset.price);
+        const unit  = card.dataset.unit || '';
+
+        if (cart[id]) {
+            cart[id].qty++;
+        } else {
+            cart[id] = { name, price, unit, qty: 1 };
+        }
+
+        card.classList.add('in-cart');
+        const badge = document.getElementById('badge-' + id);
+        if (badge) badge.textContent = cart[id].qty;
+
+        renderCart();
+        showToast(`${name} added to cart`, 'success');
+
+        // Bounce animation
+        card.style.transform = 'scale(1.06)';
+        setTimeout(() => card.style.transform = '', 200);
+    }
+
+    function changeQty(id, delta) {
+        if (!cart[id]) return;
+        cart[id].qty += delta;
+        if (cart[id].qty <= 0) {
+            delete cart[id];
+            const card = document.querySelector(`[data-id="${id}"]`);
+            if (card) { card.classList.remove('in-cart'); const b = document.getElementById('badge-' + id); if (b) b.textContent = '1'; }
+        } else {
+            const badge = document.getElementById('badge-' + id);
+            if (badge) badge.textContent = cart[id].qty;
+        }
+        renderCart();
+    }
+
+    function clearCart() {
+        Object.keys(cart).forEach(id => {
+            delete cart[id];
+            const card = document.querySelector(`[data-id="${id}"]`);
+            if (card) { card.classList.remove('in-cart'); const b = document.getElementById('badge-' + id); if (b) b.textContent = '1'; }
+        });
+        renderCart();
+    }
+
+    function renderCart() {
+        const body  = document.getElementById('cartBody');
+        const fab   = document.getElementById('cartFab');
+        const count = document.getElementById('fabCount');
+        const total = document.getElementById('cartTotal');
+        const ids   = Object.keys(cart);
+
+        const totalQty = ids.reduce((s, id) => s + cart[id].qty, 0);
+        const totalAmt = ids.reduce((s, id) => s + cart[id].price * cart[id].qty, 0);
+
+        count.textContent = totalQty;
+        total.textContent = '₹' + totalAmt.toFixed(2);
+        fab.style.display = totalQty > 0 ? 'flex' : 'none';
+
+        if (ids.length === 0) {
+            body.innerHTML = `<div class="cart-empty"><div class="ce-icon">🛒</div><p>Your cart is empty.<br>Tap items to add them.</p></div>`;
+            return;
+        }
+
+        body.innerHTML = ids.map(id => {
+            const item = cart[id];
+            return `
+            <div class="cart-item">
+                <div class="ci-icon">🛍️</div>
+                <div class="ci-info">
+                    <div class="ci-name">${item.name}</div>
+                    <div class="ci-price">₹${(item.price * item.qty).toFixed(2)} ${item.unit ? '· ' + item.unit : ''}</div>
+                </div>
+                <div class="ci-controls">
+                    <button class="ci-btn minus" onclick="changeQty('${id}', -1)">−</button>
+                    <span class="ci-qty">${item.qty}</span>
+                    <button class="ci-btn plus"  onclick="changeQty('${id}', +1)">+</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function openCart()  { document.getElementById('cartDrawer').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); }
+    function closeCart() { document.getElementById('cartDrawer').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
+
+    function selectPayment(method) {
+        document.getElementById('lbl-cod').style.borderColor = method === 'COD' ? '#1a237e' : '#e0e0e0';
+        document.getElementById('lbl-upi').style.borderColor = method === 'UPI' ? '#1a237e' : '#e0e0e0';
+        const upiInfo = document.getElementById('upiInfo');
+        if (method === 'UPI') {
+            const upiId = document.getElementById('placeOrderBtn').dataset.upiid;
+            document.getElementById('upiIdDisplay').textContent = upiId || 'Not set by shopkeeper';
+            upiInfo.style.display = 'block';
+        } else {
+            upiInfo.style.display = 'none';
+        }
+    }
+
+    function placeOrder() {
+        const ids = Object.keys(cart);
+        if (ids.length === 0) return;
+
+        const btn = document.getElementById('placeOrderBtn');
+        const shopId = parseInt(btn.dataset.shopid);
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'COD';
+
+        const payload = {
+            shopId: shopId,
+            paymentMethod: paymentMethod,
+            items: ids.map(id => ({ inventoryId: parseInt(id), quantity: cart[id].qty }))
+        };
+
+        fetch('/web/resident/orders/place', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { showToast('Error: ' + data.error, 'error'); return; }
+            showToast(`✅ Order #${data.orderId} placed! ₹${data.total}`, 'success');
+            clearCart();
+            closeCart();
+            setTimeout(() => window.location.href = '/web/resident/orders', 1500);
+        })
+        .catch(() => showToast('Failed to place order. Try again.', 'error'));
+    }
+</script>
+</body>
+</html>

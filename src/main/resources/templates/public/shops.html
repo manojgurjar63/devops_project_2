@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Shops · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        body { background: #f4f6fb; font-family: sans-serif; margin: 0; }
+        .topbar { background: #1a237e; color: white; padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .topbar .brand { font-size: 18px; font-weight: 700; }
+        .topbar .brand span { color: #ffca28; }
+        .topbar-actions { display: flex; gap: 10px; }
+        .btn-sm { padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-login { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.6); }
+        .btn-login:hover { background: rgba(255,255,255,0.1); }
+        .btn-signup { background: #ffca28; color: #1a237e; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+        .page-title { font-size: 24px; font-weight: 800; color: #1a237e; margin-bottom: 6px; }
+        .page-sub { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 28px; }
+        .search-bar input { flex: 1; padding: 10px 16px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .search-bar button { padding: 10px 22px; background: #1a237e; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .shops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .shop-card { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); transition: transform 0.2s; border: 1px solid #eee; }
+        .shop-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(26,35,126,0.1); }
+        .shop-name { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+        .shop-meta { font-size: 13px; color: #777; margin-bottom: 4px; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-open { background: #e8f5e9; color: #2e7d32; }
+        .badge-closed { background: #fce4ec; color: #c62828; }
+        .btn-view { display: block; margin-top: 16px; text-align: center; padding: 9px; background: #1a237e; color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .btn-view:hover { background: #283593; }
+        .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 32px; }
+        .pagination a { padding: 8px 14px; border-radius: 6px; background: white; border: 1px solid #ddd; color: #1a237e; text-decoration: none; font-size: 14px; }
+        .pagination a.active { background: #1a237e; color: white; border-color: #1a237e; }
+        .empty { text-align: center; padding: 60px 20px; color: #aaa; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="brand">🏪 Society <span>Shops</span></div>
+    <div class="topbar-actions">
+        <a th:href="@{/web/login}" class="btn-sm btn-login">Login</a>
+        <a th:href="@{/web/register}" class="btn-sm btn-signup">Sign Up</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="page-title">🏬 Browse Shops</div>
+    <div class="page-sub">Discover shops in your society</div>
+
+    <form class="search-bar" method="get" th:action="@{/shops}">
+        <input type="text" name="search" th:value="${search}" placeholder="Search shops by name or category..." />
+        <button type="submit">Search</button>
+    </form>
+
+    <div th:if="${shops.empty}" class="empty">No shops found.</div>
+
+    <div class="shops-grid" th:if="${!shops.empty}">
+        <div class="shop-card" th:each="shop : ${shops}">
+            <div class="shop-name" th:text="${shop.name}"></div>
+            <div class="shop-meta">📂 <span th:text="${shop.category ?: 'General'}"></span></div>
+            <div class="shop-meta">📍 <span th:text="${shop.address ?: '—'}"></span></div>
+            <div class="shop-meta">🕐 <span th:text="${shop.openTime} + ' – ' + ${shop.closeTime}"></span></div>
+            <div style="margin-top:10px;">
+                <span th:class="${shop.status.name() == 'OPEN'} ? 'badge badge-open' : 'badge badge-closed'"
+                      th:text="${shop.status}"></span>
+            </div>
+            <a th:href="@{/shops/{id}/inventory(id=${shop.id})}" class="btn-view">View Inventory →</a>
+        </div>
+    </div>
+
+    <div class="pagination" th:if="${totalPages > 1}">
+        <a th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+           th:href="@{/shops(page=${i}, search=${search})}"
+           th:text="${i + 1}"
+           th:class="${i == currentPage} ? 'active' : ''"></a>
+    </div>
+</div>
+
+</body>
+</html>

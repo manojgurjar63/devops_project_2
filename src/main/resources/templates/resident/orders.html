@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>My Orders · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Resident Portal</div>
+    <nav class="sidebar-nav">
+        <a th:href="@{/web/resident/dashboard}" class="nav-item"><span class="ni">🏠</span> Dashboard</a>
+        <a th:href="@{/web/resident/orders}" class="nav-item active"><span class="ni">📋</span> My Orders</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">📋 My Orders</div>
+            <div class="dash-subtitle">Track your placed orders</div>
+        </div>
+        <div class="header-right">
+            <a th:href="@{/web/resident/dashboard}" class="btn btn-outline btn-sm">← Back</a>
+            <div class="avatar">R</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div class="card">
+            <div class="card-header">
+                <h3>📋 Order History</h3>
+                <span class="badge-pill badge-blue" th:text="${orders.size()} + ' orders'"></span>
+            </div>
+            <div th:if="${orders.empty}" class="empty-state">
+                <div class="empty-icon">📋</div><p>No orders yet. Browse shops and place your first order!</p>
+            </div>
+            <div th:if="${!orders.empty}">
+                <div th:each="order : ${orders}" class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">Order #<span th:text="${order.id}"></span></div>
+                            <div class="order-shop" th:text="${order.shop.name}"></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span th:text="${order.status}"
+                                  th:class="${order.status.name() == 'CONFIRMED'} ? 'badge badge-approved' :
+                                             (${order.status.name() == 'CANCELLED'} ? 'badge badge-closed' : 'badge badge-pending')"></span>
+                            <div class="order-date" th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, hh:mm a')}"></div>
+                        </div>
+                    </div>
+                    <div class="order-items">
+                        <div class="oi-row" th:each="item : ${order.items}">
+                            <span>🛍️ <span th:text="${item.inventory.name}"></span> × <span th:text="${item.quantity}"></span></span>
+                            <span class="price-tag" th:text="'₹' + ${item.price.multiply(new java.math.BigDecimal(item.quantity))}"></span>
+                        </div>
+                    </div>
+                    <div class="order-footer">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span th:text="${order.paymentMethod.name() == 'UPI'} ? '📱 UPI' : '💵 COD'"
+                                  style="font-size:13px;font-weight:600;color:#555;"></span>
+                            <span th:if="${order.paymentDone}" class="badge badge-approved">✅ Paid</span>
+                            <span th:unless="${order.paymentDone}" class="badge badge-pending">Unpaid</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <!-- UPI: show pay button if not paid yet -->
+                            <div th:if="${order.paymentMethod.name() == 'UPI' and !order.paymentDone and order.status.name() != 'CANCELLED'}"
+                                 style="background:#fff8e1;border:1.5px solid #ffe082;border-radius:10px;padding:10px 14px;font-size:13px;">
+                                <div style="font-weight:700;color:#f57f17;margin-bottom:4px;">⚠️ Pay to confirm your order</div>
+                                <div style="color:#555;">UPI ID: <strong th:text="${order.shop.upiId ?: 'Contact shopkeeper'}"></strong></div>
+                                <div style="color:#888;font-size:11px;margin-top:2px;">Pay ₹<span th:text="${order.totalAmount}"></span> then click below</div>
+                                <button class="btn btn-success btn-sm" style="margin-top:8px;"
+                                        th:onclick="'markPaid(' + ${order.id} + ')'">✅ I've Paid</button>
+                            </div>
+                            <strong style="font-size:18px;color:#1a237e;" th:text="'₹' + ${order.totalAmount}"></strong>
+                            <button th:if="${order.status.name() == 'PENDING'}"
+                                    class="btn btn-danger btn-sm"
+                                    th:onclick="'cancelOrder(' + ${order.id} + ')'">✗ Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+<script>
+function markPaid(orderId) {
+    fetch(`/web/resident/orders/${orderId}/paid`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { showToast(d.error || '✅ Payment marked! Shopkeeper will confirm shortly.', d.error ? 'error' : 'success'); if (!d.error) setTimeout(() => location.reload(), 1500); })
+        .catch(() => showToast('Failed. Try again.', 'error'));
+}
+function cancelOrder(orderId) {
+    if (!confirm('Cancel this order?')) return;
+    fetch(`/web/resident/orders/${orderId}/cancel`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => { showToast(d.error || 'Order cancelled', d.error ? 'error' : 'success'); if (!d.error) setTimeout(() => location.reload(), 1000); })
+        .catch(() => showToast('Failed to cancel', 'error'));
+}
+</script>
+<style>
+.order-card { border: 1.5px solid #e8eaf6; border-radius: 12px; padding: 18px; margin-bottom: 14px; transition: all 0.2s; animation: fadeUp 0.3s ease both; }
+.order-card:hover { border-color: #9fa8da; box-shadow: 0 4px 16px rgba(26,35,126,0.1); transform: translateY(-2px); }
+.order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.order-id { font-size: 13px; color: #888; font-weight: 600; }
+.order-shop { font-size: 16px; font-weight: 800; color: #1a1a2e; margin-top: 2px; }
+.order-date { font-size: 11px; color: #aaa; margin-top: 4px; }
+.order-items { background: #f8f9ff; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.oi-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #555; }
+.order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+</style>
+</body>
+</html>

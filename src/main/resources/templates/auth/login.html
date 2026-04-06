@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        :root { --primary: #1a237e; --primary-light: #3949ab; --accent: #ff6f00; }
+
+        /* ── Navbar ── */
+        .lp-nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 40px; height: 64px;
+            background: rgba(26,35,126,0.92); backdrop-filter: blur(8px);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+        .lp-nav .brand { color: white; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        .lp-nav .brand span { color: #ffca28; }
+        .lp-nav-actions { display: flex; gap: 12px; }
+        .btn-nav-login { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.6); padding: 8px 22px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-nav-login:hover { border-color: white; background: rgba(255,255,255,0.1); }
+        .btn-nav-signup { background: #ffca28; color: #1a237e; border: none; padding: 8px 22px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-nav-signup:hover { background: #ffd54f; transform: translateY(-1px); }
+
+        /* ── Hero ── */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0d1b6e 0%, #1a237e 40%, #283593 70%, #3949ab 100%);
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; color: white; padding: 100px 20px 60px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-content { position: relative; max-width: 700px; }
+        .hero-badge { display: inline-block; background: rgba(255,202,40,0.2); color: #ffca28; border: 1px solid rgba(255,202,40,0.4); padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 24px; letter-spacing: 0.5px; }
+        .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; line-height: 1.15; margin-bottom: 20px; }
+        .hero h1 span { color: #ffca28; }
+        .hero p { font-size: 17px; opacity: 0.85; line-height: 1.7; margin-bottom: 40px; max-width: 560px; margin-left: auto; margin-right: auto; }
+        .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 56px; }
+        .btn-hero-primary { background: #ffca28; color: #1a237e; border: none; padding: 14px 36px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(255,202,40,0.35); }
+        .btn-hero-primary:hover { background: #ffd54f; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,202,40,0.45); }
+        .btn-hero-outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.7); padding: 14px 36px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-hero-outline:hover { border-color: white; background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        .hero-stats { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; }
+        .hero-stat { text-align: center; }
+        .hero-stat .num { font-size: 28px; font-weight: 800; color: #ffca28; }
+        .hero-stat .lbl { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+        .hero-divider { width: 1px; background: rgba(255,255,255,0.2); height: 40px; align-self: center; }
+
+        /* ── Scroll indicator ── */
+        .scroll-hint { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.5); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+        /* ── Section ── */
+        section { padding: 80px 20px; }
+        .section-label { text-align: center; color: var(--primary); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+        .section-title { text-align: center; font-size: clamp(22px, 3vw, 32px); font-weight: 800; color: #1a1a2e; margin-bottom: 12px; }
+        .section-sub { text-align: center; color: #666; font-size: 15px; max-width: 520px; margin: 0 auto 48px; line-height: 1.7; }
+
+        /* ── Features ── */
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; }
+        .feature-card { background: white; border-radius: 14px; padding: 32px 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.07); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #f0f0f0; }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(26,35,126,0.12); }
+        .feature-icon { font-size: 36px; margin-bottom: 16px; }
+        .feature-card h3 { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+        .feature-card p { font-size: 14px; color: #666; line-height: 1.7; }
+
+        /* ── Roles ── */
+        .roles-section { background: #f8f9ff; }
+        .roles-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1000px; margin: 0 auto; }
+        .role-card { background: white; border-radius: 14px; padding: 36px 28px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.07); border-top: 4px solid transparent; transition: transform 0.2s; }
+        .role-card:hover { transform: translateY(-4px); }
+        .role-card.resident { border-top-color: #2e7d32; }
+        .role-card.shopkeeper { border-top-color: #e65100; }
+        .role-card.admin { border-top-color: #1a237e; }
+        .role-icon { font-size: 44px; margin-bottom: 16px; }
+        .role-card h3 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+        .role-card p { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 20px; }
+        .role-perks { list-style: none; text-align: left; }
+        .role-perks li { font-size: 13px; color: #555; padding: 5px 0; display: flex; align-items: center; gap: 8px; }
+        .role-perks li::before { content: '✓'; color: #2e7d32; font-weight: 700; }
+
+        /* ── How it works ── */
+        .steps { display: flex; gap: 0; max-width: 900px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+        .step { flex: 1; min-width: 200px; text-align: center; padding: 20px; position: relative; }
+        .step:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 28px; font-size: 22px; color: #c5cae9; }
+        .step-num { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #1a237e, #3949ab); color: white; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: 0 4px 12px rgba(26,35,126,0.3); }
+        .step h4 { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+        .step p { font-size: 13px; color: #777; line-height: 1.6; }
+
+        /* ── CTA ── */
+        .cta-section { background: linear-gradient(135deg, #1a237e, #3949ab); color: white; text-align: center; }
+        .cta-section h2 { font-size: clamp(24px, 3vw, 36px); font-weight: 800; margin-bottom: 14px; }
+        .cta-section p { font-size: 16px; opacity: 0.85; margin-bottom: 36px; }
+
+        /* ── Footer ── */
+        footer { background: #0d1b6e; color: rgba(255,255,255,0.6); text-align: center; padding: 28px 20px; font-size: 13px; }
+        footer span { color: #ffca28; }
+
+        /* ── Modal ── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; border-radius: 14px; padding: 36px 40px; width: 100%; max-width: 420px; box-shadow: 0 12px 48px rgba(0,0,0,0.3); position: relative; animation: slideUp 0.22s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-close { position: absolute; top: 14px; right: 18px; font-size: 22px; cursor: pointer; color: #aaa; background: none; border: none; line-height: 1; }
+        .modal-close:hover { color: #333; }
+        .modal-box .m-logo { text-align: center; font-size: 32px; margin-bottom: 8px; }
+        .modal-box h2 { text-align: center; color: #1a237e; font-size: 22px; margin-bottom: 4px; }
+        .modal-box .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 24px; }
+        .modal-box .btn-primary { width: 100%; padding: 12px; font-size: 15px; margin-top: 4px; }
+        .modal-box .footer-link { text-align: center; margin-top: 18px; font-size: 14px; color: #666; }
+        .modal-box .footer-link a { color: #1a237e; font-weight: 500; text-decoration: none; cursor: pointer; }
+        .notice-banner { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px; text-align: center; }
+
+        @media (max-width: 600px) {
+            .lp-nav { padding: 0 20px; }
+            .step:not(:last-child)::after { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="lp-nav">
+    <div class="brand">🏪 Society <span>Shops</span></div>
+    <div class="lp-nav-actions">
+        <button class="btn-nav-login" onclick="openModal('loginModal')">Login</button>
+        <button class="btn-nav-signup" onclick="openModal('registerModal')">Sign Up</button>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">🏘️ Your Neighbourhood Marketplace</div>
+        <h1>Discover &amp; Manage<br><span>Society Shops</span> Easily</h1>
+        <p>Connect residents with local shopkeepers. Browse shops, track inventory, mark favourites — all in one place.</p>
+        <div class="hero-actions">
+            <button class="btn-hero-primary" onclick="openModal('registerModal')">Get Started Free</button>
+            <button class="btn-hero-outline" onclick="openModal('loginModal')">Login to Account</button>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat"><div class="num">3</div><div class="lbl">User Roles</div></div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat"><div class="num">∞</div><div class="lbl">Shops &amp; Items</div></div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat"><div class="num">24/7</div><div class="lbl">Always Online</div></div>
+        </div>
+    </div>
+    <div class="scroll-hint">
+        <span>Scroll to explore</span>
+        <span>↓</span>
+    </div>
+</section>
+
+<!-- Features -->
+<section style="background: white;">
+    <div class="section-label">Features</div>
+    <div class="section-title">Everything your society needs</div>
+    <div class="section-sub">A complete platform for residents, shopkeepers, and admins to stay connected.</div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Discover Local Shops</h3>
+            <p>Browse all shops in your society, check their status, and find exactly what you need nearby.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📦</div>
+            <h3>Live Inventory</h3>
+            <p>Shopkeepers can update stock in real time. Residents always know what's available before visiting.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">❤️</div>
+            <h3>Favourites</h3>
+            <p>Save your go-to shops and get quick access to the ones you visit most often.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>Secure &amp; Role-Based</h3>
+            <p>JWT-secured access with separate dashboards for Residents, Shopkeepers, and Admins.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📧</div>
+            <h3>Email Notifications</h3>
+            <p>Stay informed with automated email alerts for important updates and activities.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Admin Dashboard</h3>
+            <p>Full oversight — manage users, approve shops, and monitor the entire society marketplace.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Roles -->
+<section class="roles-section">
+    <div class="section-label">Who is it for?</div>
+    <div class="section-title">Built for every role</div>
+    <div class="section-sub">Whether you live here, run a shop, or manage the society — we've got you covered.</div>
+    <div class="roles-grid">
+        <div class="role-card resident">
+            <div class="role-icon">🏠</div>
+            <h3>Resident</h3>
+            <p>Explore shops, check inventory, and save your favourites.</p>
+            <ul class="role-perks">
+                <li>Browse all society shops</li>
+                <li>View live inventory</li>
+                <li>Mark favourite shops</li>
+                <li>Personalised dashboard</li>
+            </ul>
+        </div>
+        <div class="role-card shopkeeper">
+            <div class="role-icon">🛒</div>
+            <h3>Shopkeeper</h3>
+            <p>Manage your shop profile and keep inventory up to date.</p>
+            <ul class="role-perks">
+                <li>Create &amp; manage your shop</li>
+                <li>Add / update inventory</li>
+                <li>Set shop open/closed status</li>
+                <li>Track your listings</li>
+            </ul>
+        </div>
+        <div class="role-card admin">
+            <div class="role-icon">⚙️</div>
+            <h3>Admin</h3>
+            <p>Full control over users, shops, and the entire platform.</p>
+            <ul class="role-perks">
+                <li>Manage all users</li>
+                <li>Approve or reject shops</li>
+                <li>Monitor platform activity</li>
+                <li>System-wide oversight</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- How it works -->
+<section style="background: white;">
+    <div class="section-label">How it works</div>
+    <div class="section-title">Up and running in minutes</div>
+    <div class="section-sub">Simple steps to get started on Society Shops.</div>
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <h4>Sign Up</h4>
+            <p>Create your account as a Resident or Shopkeeper in seconds.</p>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <h4>Set Up Profile</h4>
+            <p>Residents explore; Shopkeepers add their shop and inventory.</p>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <h4>Connect</h4>
+            <p>Residents discover shops, check stock, and save favourites.</p>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <h4>Stay Updated</h4>
+            <p>Get notified about changes and keep your community informed.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <h2>Ready to join your society marketplace?</h2>
+    <p>Sign up for free — no credit card required.</p>
+    <div class="hero-actions">
+        <button class="btn-hero-primary" onclick="openModal('registerModal')">Create Free Account</button>
+        <button class="btn-hero-outline" onclick="openModal('loginModal')">I already have an account</button>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <p>© 2026 <span>Society Shops</span> · Built for connected communities</p>
+</footer>
+
+<!-- ══ Login Modal ══ -->
+<div class="modal-overlay" id="loginModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+        <div class="m-logo">🏪</div>
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Sign in to your account</p>
+
+        <div th:if="${param.notregistered}" class="notice-banner">
+            ⚠️ You need to <a onclick="switchModal('loginModal','registerModal')" style="color:#e65100;font-weight:600;cursor:pointer;">register first</a> before logging in.
+        </div>
+        <div th:if="${param.session}" class="notice-banner">
+            ⏱️ Your session expired. Please login again.
+        </div>
+        <div th:if="${param.error}" class="alert alert-error">
+            <span th:text="${param.error[0] != 'true' ? param.error[0] : 'Invalid email or password.'}"></span>
+            <span th:if="${param.error[0] != null and #strings.contains(param.error[0], 'register')}">
+                &nbsp;<a onclick="switchModal('loginModal','registerModal')" style="color:#c62828;font-weight:600;cursor:pointer;text-decoration:underline;">Sign Up</a>
+            </span>
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success">Logged out successfully.</div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <form th:action="@{/web/login}" method="post">
+            <input type="hidden" name="redirect" th:value="${param.redirect}" />
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="username" placeholder="Enter your email" required />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter your password" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+                <input type="checkbox" name="remember-me" id="rememberMe" style="width:auto;cursor:pointer;" />
+                <label for="rememberMe" style="font-size:13px;color:#666;cursor:pointer;">Keep me logged in for 30 days</label>
+            </div>
+        </form>
+        <p style="text-align:center;margin-top:10px;font-size:13px;">
+            <a th:href="@{/web/forgot-password}" style="color:#888;">Forgot password?</a>
+        </p>
+        <p class="footer-link">Don't have an account? <a onclick="switchModal('loginModal','registerModal')">Sign Up</a></p>
+    </div>
+</div>
+
+<!-- ══ Register Modal ══ -->
+<div class="modal-overlay" id="registerModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        <div class="m-logo">🏪</div>
+        <h2>Create Account</h2>
+        <p class="subtitle">Join Society Shops today</p>
+
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <form th:action="@{/web/register}" method="post">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" placeholder="Enter your name" required />
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="Enter your email" required />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Enter your password" required />
+            </div>
+            <div class="form-group">
+                <label>Phone (optional)</label>
+                <input type="text" name="phone" placeholder="Enter your phone" />
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role">
+                    <option value="RESIDENT">Resident</option>
+                    <option value="SHOPKEEPER">Shopkeeper</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+        <p class="footer-link">Already have an account? <a onclick="switchModal('registerModal','loginModal')">Login</a></p>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function switchModal(from, to) { closeModal(from); openModal(to); }
+
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+        o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); });
+    });
+
+    // Keyboard ESC closes modal
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(o => o.classList.remove('active'));
+    });
+
+    (function () {
+        const p = new URLSearchParams(window.location.search);
+        if (p.has('error') || p.has('logout') || p.has('notregistered') || p.has('session') || p.has('redirect')) openModal('loginModal');
+        if (p.has('registererror')) openModal('registerModal');
+        if (document.querySelector('#loginModal .alert-success')) openModal('loginModal');
+        // Clear query params so refresh doesn't re-show the same error
+        if (window.location.search) history.replaceState(null, '', window.location.pathname);
+    })();
+
+    // Subtle navbar scroll effect
+    window.addEventListener('scroll', () => {
+        document.querySelector('.lp-nav').style.background =
+            window.scrollY > 40 ? 'rgba(13,27,110,0.98)' : 'rgba(26,35,126,0.92)';
+    });
+</script>
+</body>
+</html>

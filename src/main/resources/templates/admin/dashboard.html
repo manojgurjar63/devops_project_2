@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin Dashboard · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Admin Panel</div>
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-item active"><span class="ni">📊</span> Dashboard</a>
+        <a href="#pending" class="nav-item"><span class="ni">⏳</span> Pending Approvals</a>
+        <a href="#approved" class="nav-item"><span class="ni">✅</span> All Shops</a>
+        <a href="#shopkeepers" class="nav-item"><span class="ni">🧑‍💼</span> Shopkeepers</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">Admin Dashboard</div>
+            <div class="dash-subtitle">Manage approvals &amp; monitor the platform</div>
+        </div>
+        <div class="header-right">
+            <div class="avatar" title="Admin">A</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div class="stats-row">
+            <div class="stat-card sc-yellow">
+                <div class="sc-icon">⏳</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${pendingShops.size()}">0</div>
+                    <div class="sc-lbl">Pending Approvals</div>
+                </div>
+            </div>
+            <div class="stat-card sc-green">
+                <div class="sc-icon">🏬</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${allShops.size()}">0</div>
+                    <div class="sc-lbl">Approved Shops</div>
+                </div>
+            </div>
+            <div class="stat-card sc-blue">
+                <div class="sc-icon">📦</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${allShops.size() + pendingShops.size()}">0</div>
+                    <div class="sc-lbl">Total Registered</div>
+                </div>
+            </div>
+            <div class="stat-card sc-blue">
+                <div class="sc-icon">🧑‍💼</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${shopkeepers.size()}">0</div>
+                    <div class="sc-lbl">Shopkeepers</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registered Shopkeepers -->
+        <div class="card" id="shopkeepers">
+            <div class="card-header">
+                <h3>🧑‍💼 Registered Shopkeepers</h3>
+                <span class="badge-pill badge-blue" th:text="${shopkeepers.size()} + ' shopkeepers'"></span>
+            </div>
+            <div th:if="${shopkeepers.empty}" class="empty-state">
+                <div class="empty-icon">🧑‍💼</div><p>No shopkeepers registered yet.</p>
+            </div>
+            <div class="table-wrap" th:if="${!shopkeepers.empty}">
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Shops</th></tr></thead>
+                    <tbody>
+                        <tr th:each="sk : ${shopkeepers}">
+                            <td><strong th:text="${sk.name}"></strong></td>
+                            <td th:text="${sk.email}"></td>
+                            <td th:text="${sk.phone ?: '—'}"></td>
+                            <td th:text="${#temporals.format(sk.createdAt, 'dd MMM yyyy')}"></td>
+                            <td>
+                                <span th:if="${sk.shops.empty}" class="badge badge-pending">No shops yet</span>
+                                <span th:unless="${sk.shops.empty}" class="badge badge-approved" th:text="${sk.shops.size()} + ' shop(s)'"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" id="pending">
+            <div class="card-header">
+                <h3>⏳ Pending Approvals</h3>
+                <span class="badge-pill badge-yellow" th:text="${pendingShops.size()} + ' pending'"></span>
+            </div>
+            <div th:if="${pendingShops.empty}" class="empty-state">
+                <div class="empty-icon">✅</div><p>All caught up! No pending approvals.</p>
+            </div>
+            <div class="table-wrap" th:if="${!pendingShops.empty}">
+                <table>
+                    <thead><tr><th>Shop Name</th><th>Category</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        <tr th:each="shop : ${pendingShops}">
+                            <td><strong th:text="${shop.name}"></strong></td>
+                            <td><span class="tag" th:text="${shop.category}"></span></td>
+                            <td th:text="${shop.phone}"></td>
+                            <td th:text="${shop.address}"></td>
+                            <td class="action-cell">
+                                <form th:action="@{/web/admin/shops/{id}/approve(id=${shop.id})}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-success btn-sm">✓ Approve</button>
+                                </form>
+                                <form th:action="@{/web/admin/shops/{id}/reject(id=${shop.id})}" method="post"
+                                      style="display:inline;" data-confirm="Reject this shop? This cannot be undone.">
+                                    <button type="submit" class="btn btn-danger btn-sm">✗ Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" id="approved">
+            <div class="card-header">
+                <h3>✅ Approved Shops</h3>
+                <span class="badge-pill badge-green" th:text="${allShops.size()} + ' shops'"></span>
+            </div>
+            <div th:if="${allShops.empty}" class="empty-state">
+                <div class="empty-icon">🏬</div><p>No approved shops yet.</p>
+            </div>
+            <div class="table-wrap" th:if="${!allShops.empty}">
+                <table>
+                    <thead><tr><th>Shop Name</th><th>Category</th><th>Status</th><th>Phone</th><th>Address</th></tr></thead>
+                    <tbody>
+                        <tr th:each="shop : ${allShops}">
+                            <td><strong th:text="${shop.name}"></strong></td>
+                            <td><span class="tag" th:text="${shop.category}"></span></td>
+                            <td><span th:text="${shop.status}" th:class="${shop.status.name() == 'OPEN'} ? 'badge badge-open' : 'badge badge-closed'"></span></td>
+                            <td th:text="${shop.phone}"></td>
+                            <td th:text="${shop.address}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="confirm-overlay" id="confirmDialog">
+    <div class="confirm-box">
+        <h4>Are you sure?</h4>
+        <p id="confirmMsg"></p>
+        <div class="confirm-actions">
+            <button class="btn btn-danger" onclick="confirmYes()">Yes, proceed</button>
+            <button class="btn btn-outline" onclick="confirmNo()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+</body>
+</html>

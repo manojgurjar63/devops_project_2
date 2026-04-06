@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title th:text="${shop.name} + ' · Inventory'">Inventory</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        body { background: #f4f6fb; font-family: sans-serif; margin: 0; }
+        .topbar { background: #1a237e; color: white; padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .topbar .brand { font-size: 18px; font-weight: 700; }
+        .topbar .brand span { color: #ffca28; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+        .btn-sm { padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+        .btn-login { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.6); }
+        .btn-signup { background: #ffca28; color: #1a237e; }
+        .cart-btn { background: white; color: #1a237e; border: none; padding: 7px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+        .back-link { color: #1a237e; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; margin-bottom: 16px; }
+        .shop-header { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .shop-header h2 { margin: 0 0 6px; color: #1a237e; font-size: 22px; }
+        .shop-header p { margin: 0; color: #777; font-size: 14px; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 10px; }
+        .badge-open { background: #e8f5e9; color: #2e7d32; }
+        .badge-closed { background: #fce4ec; color: #c62828; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+        .item-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .item-name { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+        .item-price { font-size: 18px; font-weight: 800; color: #1a237e; margin-bottom: 12px; }
+        .item-desc { font-size: 13px; color: #888; margin-bottom: 14px; }
+        .qty-row { display: flex; align-items: center; gap: 10px; }
+        .qty-btn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #1a237e; background: white; color: #1a237e; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-val { font-size: 16px; font-weight: 700; min-width: 24px; text-align: center; }
+        .add-btn { margin-left: auto; padding: 7px 16px; background: #1a237e; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .add-btn:hover { background: #283593; }
+
+        /* Cart sidebar */
+        .cart-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; }
+        .cart-overlay.open { display: block; }
+        .cart-panel { position: fixed; right: -360px; top: 0; bottom: 0; width: 360px; background: white; z-index: 101; box-shadow: -4px 0 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; transition: right 0.3s ease; }
+        .cart-header { padding: 20px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h3 { margin: 0; color: #1a237e; }
+        .cart-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #aaa; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 16px 24px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .cart-item-name { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+        .cart-item-sub { font-size: 12px; color: #888; margin-top: 2px; }
+        .cart-item-price { font-size: 14px; font-weight: 700; color: #1a237e; }
+        .cart-remove { background: none; border: none; color: #e53935; cursor: pointer; font-size: 16px; margin-left: 10px; }
+        .cart-empty { text-align: center; color: #bbb; padding: 40px 0; font-size: 15px; }
+        .cart-footer { padding: 20px 24px; border-top: 1px solid #eee; }
+        .cart-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+        .btn-checkout { width: 100%; padding: 13px; background: #1a237e; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+        .btn-checkout:hover { background: #283593; }
+        .cart-badge { background: #e53935; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; }
+
+        /* Order modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: white; border-radius: 14px; padding: 32px; width: 100%; max-width: 420px; box-shadow: 0 12px 48px rgba(0,0,0,0.2); }
+        .modal-box h3 { margin: 0 0 20px; color: #1a237e; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-primary { flex: 1; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .btn-outline { flex: 1; padding: 12px; background: white; color: #1a237e; border: 1.5px solid #1a237e; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
+        .order-summary { background: #f8f9ff; border-radius: 8px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #555; }
+        .order-summary .total { font-size: 16px; font-weight: 800; color: #1a237e; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="brand">🏪 Society <span>Shops</span></div>
+    <div class="topbar-actions">
+        <button class="cart-btn" onclick="openCart()">🛒 Cart <span class="cart-badge" id="cartCount">0</span></button>
+        <a th:href="@{/web/login}" class="btn-sm btn-login">Login</a>
+        <a th:href="@{/web/register}" class="btn-sm btn-signup">Sign Up</a>
+    </div>
+</div>
+
+<div class="container">
+    <a href="/shops" class="back-link">← Back to Shops</a>
+
+    <div class="shop-header">
+        <h2>
+            <span th:text="${shop.name}"></span>
+            <span th:class="${shop.status.name() == 'OPEN'} ? 'badge badge-open' : 'badge badge-closed'"
+                  th:text="${shop.status}"></span>
+        </h2>
+        <p>
+            <span th:if="${shop.category}">📂 <span th:text="${shop.category}"></span> &nbsp;·&nbsp; </span>
+            <span th:if="${shop.address}">📍 <span th:text="${shop.address}"></span> &nbsp;·&nbsp; </span>
+            🕐 <span th:text="${shop.openTime} + ' – ' + ${shop.closeTime}"></span>
+        </p>
+    </div>
+
+    <div th:if="${items.empty}" style="text-align:center;padding:60px;color:#aaa;">No items available right now.</div>
+
+    <div class="items-grid" th:if="${!items.empty}">
+        <div class="item-card" th:each="item : ${items}"
+             th:data-id="${item.id}"
+             th:data-name="${item.name}"
+             th:data-price="${item.price}">
+            <div class="item-name" th:text="${item.name}"></div>
+            <div class="item-price">₹<span th:text="${item.price}"></span></div>
+            <div class="item-desc" th:text="${item.description ?: ''}"></div>
+            <div class="qty-row">
+                <button class="qty-btn" onclick="changeQty(this, -1)">−</button>
+                <span class="qty-val">1</span>
+                <button class="qty-btn" onclick="changeQty(this, 1)">+</button>
+                <button class="add-btn" onclick="addToCart(this)">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel" style="right:-360px">
+    <div class="cart-header">
+        <h3>🛒 Your Cart</h3>
+        <button class="cart-close" onclick="closeCart()">×</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+        <div class="cart-empty">Your cart is empty</div>
+    </div>
+    <div class="cart-footer">
+        <div class="cart-total"><span>Total</span><span id="cartTotal">₹0</span></div>
+        <button class="btn-checkout" onclick="proceedToCheckout()">Proceed to Order →</button>
+    </div>
+</div>
+
+<!-- Order / Login Modal -->
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-box">
+        <h3>📦 Place Order</h3>
+        <div class="order-summary" id="orderSummary"></div>
+        <div class="form-group">
+            <label>Delivery Address *</label>
+            <textarea id="deliveryAddress" placeholder="Enter your flat/house address..." required></textarea>
+        </div>
+        <div class="form-group">
+            <label>Payment Method</label>
+            <select id="paymentMethod">
+                <option value="COD">Cash on Delivery</option>
+                <option value="UPI">UPI</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="submitOrder()">Place Order</button>
+            <button class="btn-outline" onclick="closeOrderModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const SHOP_ID = /*[[${shop.id}]]*/ 0;
+    const LOGIN_URL = /*[[@{/web/login}]]*/ '/web/login';
+    const ORDER_URL = /*[[@{/web/resident/orders/place}]]*/ '/web/resident/orders/place';
+
+    let cart = {}; // { inventoryId: { name, price, quantity } }
+
+    function changeQty(btn, delta) {
+        const qtyEl = btn.parentElement.querySelector('.qty-val');
+        let q = parseInt(qtyEl.textContent) + delta;
+        if (q < 1) q = 1;
+        qtyEl.textContent = q;
+    }
+
+    function addToCart(btn) {
+        const card = btn.closest('.item-card');
+        const id = card.dataset.id;
+        const name = card.dataset.name;
+        const price = parseFloat(card.dataset.price);
+        const qty = parseInt(card.querySelector('.qty-val').textContent);
+
+        if (cart[id]) {
+            cart[id].quantity += qty;
+        } else {
+            cart[id] = { name, price, quantity: qty };
+        }
+        updateCartUI();
+        openCart();
+    }
+
+    function removeFromCart(id) {
+        delete cart[id];
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const items = Object.entries(cart);
+        const count = items.reduce((s, [, v]) => s + v.quantity, 0);
+        document.getElementById('cartCount').textContent = count;
+
+        const container = document.getElementById('cartItems');
+        if (items.length === 0) {
+            container.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+            document.getElementById('cartTotal').textContent = '₹0';
+            return;
+        }
+
+        let total = 0;
+        container.innerHTML = items.map(([id, item]) => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            return `<div class="cart-item">
+                <div>
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-sub">₹${item.price} × ${item.quantity}</div>
+                </div>
+                <div style="display:flex;align-items:center;">
+                    <span class="cart-item-price">₹${subtotal.toFixed(2)}</span>
+                    <button class="cart-remove" onclick="removeFromCart('${id}')">✕</button>
+                </div>
+            </div>`;
+        }).join('');
+        document.getElementById('cartTotal').textContent = '₹' + total.toFixed(2);
+    }
+
+    function openCart() {
+        document.getElementById('cartOverlay').classList.add('open');
+        document.getElementById('cartPanel').style.right = '0';
+    }
+
+    function closeCart() {
+        document.getElementById('cartOverlay').classList.remove('open');
+        document.getElementById('cartPanel').style.right = '-360px';
+    }
+
+    function proceedToCheckout() {
+        if (Object.keys(cart).length === 0) return alert('Your cart is empty!');
+        closeCart();
+
+        // Build summary
+        let total = 0;
+        let summaryHtml = Object.values(cart).map(item => {
+            const sub = item.price * item.quantity;
+            total += sub;
+            return `<div>${item.name} × ${item.quantity} = ₹${sub.toFixed(2)}</div>`;
+        }).join('');
+        summaryHtml += `<div class="total">Total: ₹${total.toFixed(2)}</div>`;
+        document.getElementById('orderSummary').innerHTML = summaryHtml;
+
+        document.getElementById('orderModal').classList.add('open');
+    }
+
+    function closeOrderModal() {
+        document.getElementById('orderModal').classList.remove('open');
+    }
+
+    function submitOrder() {
+        const address = document.getElementById('deliveryAddress').value.trim();
+        if (!address) return alert('Please enter a delivery address.');
+
+        const payload = {
+            shopId: SHOP_ID,
+            paymentMethod: document.getElementById('paymentMethod').value,
+            deliveryAddress: address,
+            items: Object.entries(cart).map(([id, item]) => ({
+                inventoryId: parseInt(id),
+                quantity: item.quantity
+            }))
+        };
+
+        // Save cart before attempting — so it survives a login redirect
+        sessionStorage.setItem('pendingCart', JSON.stringify({
+            shopId: SHOP_ID, cart, address,
+            paymentMethod: document.getElementById('paymentMethod').value
+        }));
+
+        fetch(ORDER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            redirect: 'manual'   // don't follow redirects — detect them instead
+        }).then(res => {
+            // opaqueredirect or 3xx = not logged in, got redirected to login page
+            if (res.type === 'opaqueredirect' || res.status === 0 || res.status === 302 || res.status === 401 || res.status === 403) {
+                window.location.href = LOGIN_URL + '?redirect=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            if (res.ok) {
+                return res.json().then(data => {
+                    cart = {};
+                    updateCartUI();
+                    closeOrderModal();
+                    sessionStorage.removeItem('pendingCart');
+                    alert('✅ Order placed! Order ID: ' + data.orderId + '\nTotal: ₹' + data.total);
+                });
+            } else {
+                return res.json().then(d => alert('Error: ' + (d.error || 'Something went wrong')));
+            }
+        }).catch(() => {
+            window.location.href = LOGIN_URL + '?redirect=' + encodeURIComponent(window.location.pathname);
+        });
+    }
+
+    window.addEventListener('load', () => {
+        document.getElementById('cartOverlay').classList.remove('open');
+        document.getElementById('orderModal').classList.remove('open');
+        document.getElementById('cartPanel').style.right = '-360px';
+
+        const pending = sessionStorage.getItem('pendingCart');
+        if (pending) {
+            const data = JSON.parse(pending);
+            if (data.shopId == SHOP_ID) {
+                cart = data.cart;
+                updateCartUI();
+                sessionStorage.removeItem('pendingCart');
+                // Only re-open checkout if we just came back from login (has ?redirect in referrer or came from login page)
+                if (document.referrer.includes('/web/login') || document.referrer.includes('/web/dashboard')) {
+                    document.getElementById('deliveryAddress').value = data.address || '';
+                    document.getElementById('paymentMethod').value = data.paymentMethod || 'COD';
+                    proceedToCheckout();
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

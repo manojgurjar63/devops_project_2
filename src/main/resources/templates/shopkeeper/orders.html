@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Shop Orders · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Shopkeeper Panel</div>
+    <nav class="sidebar-nav">
+        <a th:href="@{/web/shopkeeper/dashboard}" class="nav-item"><span class="ni">📊</span> Dashboard</a>
+        <a href="#" class="nav-item active"><span class="ni">📋</span> Orders</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">📋 Shop Orders</div>
+            <div class="dash-subtitle">Manage incoming orders</div>
+        </div>
+        <div class="header-right">
+            <a th:href="@{/web/shopkeeper/dashboard}" class="btn btn-outline btn-sm">← Back</a>
+            <div class="avatar">S</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div class="stats-row">
+            <div class="stat-card sc-yellow">
+                <div class="sc-icon">⏳</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${pendingCount}">0</div>
+                    <div class="sc-lbl">Pending</div>
+                </div>
+            </div>
+            <div class="stat-card sc-green">
+                <div class="sc-icon">✅</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${confirmedCount}">0</div>
+                    <div class="sc-lbl">Confirmed</div>
+                </div>
+            </div>
+            <div class="stat-card sc-blue">
+                <div class="sc-icon">📋</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${orders.size()}">0</div>
+                    <div class="sc-lbl">Total Orders</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📋 Incoming Orders</h3>
+                <span class="badge-pill badge-blue" th:text="${orders.size()} + ' orders'"></span>
+            </div>
+            <div th:if="${orders.empty}" class="empty-state">
+                <div class="empty-icon">📋</div><p>No orders yet.</p>
+            </div>
+            <div th:if="${!orders.empty}">
+                <div th:each="order : ${orders}" class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">Order #<span th:text="${order.id}"></span></div>
+                            <div class="order-shop" th:text="'From: ' + ${order.resident.name}"></div>
+                            <div class="order-date" th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, hh:mm a')}"></div>
+                        </div>
+                        <span th:text="${order.status}"
+                              th:class="${order.status.name() == 'CONFIRMED'} ? 'badge badge-approved' :
+                                         (${order.status.name() == 'CANCELLED'} ? 'badge badge-closed' : 'badge badge-pending')"></span>
+                    </div>
+                    <div class="order-items">
+                        <div class="oi-row" th:each="item : ${order.items}">
+                            <span>🛍️ <span th:text="${item.inventory.name}"></span> × <span th:text="${item.quantity}"></span></span>
+                            <span class="price-tag" th:text="'₹' + ${item.price.multiply(new java.math.BigDecimal(item.quantity))}"></span>
+                        </div>
+                    </div>
+                    <div class="order-footer">
+                        <div>
+                            <strong style="font-size:17px;color:#1a237e;" th:text="'Total: ₹' + ${order.totalAmount}"></strong>
+                            <div style="margin-top:4px;display:flex;gap:8px;align-items:center;">
+                                <span th:text="${order.paymentMethod.name() == 'UPI'} ? '📱 UPI' : '💵 COD'"
+                                      style="font-size:13px;font-weight:600;color:#555;"></span>
+                                <span th:if="${order.paymentDone}" class="badge badge-approved">✅ Paid</span>
+                                <span th:unless="${order.paymentDone}" class="badge badge-pending">Unpaid</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;" th:if="${order.status.name() == 'PENDING'}">
+                            <form th:action="@{/web/shopkeeper/orders/{id}/status(id=${order.id})}" method="post" style="display:inline;">
+                                <input type="hidden" name="status" value="CONFIRMED"/>
+                                <input type="hidden" name="shopId" th:value="${shopId}"/>
+                                <button type="submit" class="btn btn-success btn-sm">✓ Confirm</button>
+                            </form>
+                            <form th:action="@{/web/shopkeeper/orders/{id}/status(id=${order.id})}" method="post" style="display:inline;">
+                                <input type="hidden" name="status" value="CANCELLED"/>
+                                <input type="hidden" name="shopId" th:value="${shopId}"/>
+                                <button type="submit" class="btn btn-danger btn-sm">✗ Cancel</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+<style>
+.order-card { border: 1.5px solid #e8eaf6; border-radius: 12px; padding: 18px; margin-bottom: 14px; transition: all 0.2s; animation: fadeUp 0.3s ease both; }
+.order-card:hover { border-color: #9fa8da; box-shadow: 0 4px 16px rgba(26,35,126,0.1); transform: translateY(-2px); }
+.order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.order-id { font-size: 13px; color: #888; font-weight: 600; }
+.order-shop { font-size: 15px; font-weight: 800; color: #1a1a2e; margin-top: 2px; }
+.order-date { font-size: 11px; color: #aaa; margin-top: 3px; }
+.order-items { background: #f8f9ff; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.oi-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #555; }
+.order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+</style>
+</body>
+</html>

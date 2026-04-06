@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Shopkeeper Dashboard · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Shopkeeper Panel</div>
+    <nav class="sidebar-nav">
+        <a href="#" class="nav-item active"><span class="ni">📊</span> Dashboard</a>
+        <a href="#register" class="nav-item"><span class="ni">➕</span> Register Shop</a>
+        <a href="#myshops" class="nav-item"><span class="ni">🏬</span> My Shops</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">My Dashboard</div>
+            <div class="dash-subtitle">Manage your shops and inventory</div>
+        </div>
+        <div class="header-right">
+            <div class="avatar" title="Shopkeeper">S</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div class="stats-row">
+            <div class="stat-card sc-blue">
+                <div class="sc-icon">🏬</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${shops.size()}">0</div>
+                    <div class="sc-lbl">Total Shops</div>
+                </div>
+            </div>
+            <div class="stat-card sc-green">
+                <div class="sc-icon">✅</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${approvedCount}">0</div>
+                    <div class="sc-lbl">Approved</div>
+                </div>
+            </div>
+            <div class="stat-card sc-yellow">
+                <div class="sc-icon">⏳</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${pendingCount}">0</div>
+                    <div class="sc-lbl">Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="register">
+            <div class="card-header">
+                <h3>➕ Register New Shop</h3>
+                <button class="btn btn-outline btn-sm" onclick="toggleForm('shopForm')">▲ Hide Form</button>
+            </div>
+            <div id="shopForm" class="collapsible">
+                <form th:action="@{/web/shopkeeper/shops/register}" th:object="${shopRequest}" method="post">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Shop Name *</label>
+                            <input type="text" th:field="*{name}" placeholder="e.g. Ramesh Grocery" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" th:field="*{category}" placeholder="e.g. Grocery, Pharmacy" />
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" th:field="*{phone}" placeholder="Contact number" />
+                        </div>
+                        <div class="form-group">
+                            <label>Address</label>
+                            <input type="text" th:field="*{address}" placeholder="Block A, Shop 12" />
+                        </div>
+                        <div class="form-group">
+                            <label>Opening Time</label>
+                            <select th:field="*{openTime}">
+                                <option value="">-- Select --</option>
+                                <option value="06:00">6:00 AM</option>
+                                <option value="06:30">6:30 AM</option>
+                                <option value="07:00">7:00 AM</option>
+                                <option value="07:30">7:30 AM</option>
+                                <option value="08:00">8:00 AM</option>
+                                <option value="08:30">8:30 AM</option>
+                                <option value="09:00">9:00 AM</option>
+                                <option value="09:30">9:30 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="10:30">10:30 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="11:30">11:30 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="12:30">12:30 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="13:30">1:30 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="14:30">2:30 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="15:30">3:30 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="16:30">4:30 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="17:30">5:30 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="18:30">6:30 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="19:30">7:30 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="20:30">8:30 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="21:30">9:30 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Closing Time</label>
+                            <select th:field="*{closeTime}">
+                                <option value="">-- Select --</option>
+                                <option value="06:00">6:00 AM</option>
+                                <option value="06:30">6:30 AM</option>
+                                <option value="07:00">7:00 AM</option>
+                                <option value="07:30">7:30 AM</option>
+                                <option value="08:00">8:00 AM</option>
+                                <option value="08:30">8:30 AM</option>
+                                <option value="09:00">9:00 AM</option>
+                                <option value="09:30">9:30 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="10:30">10:30 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="11:30">11:30 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="12:30">12:30 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="13:30">1:30 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="14:30">2:30 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="15:30">3:30 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="16:30">4:30 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="17:30">5:30 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="18:30">6:30 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="19:30">7:30 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                                <option value="20:30">8:30 PM</option>
+                                <option value="21:00">9:00 PM</option>
+                                <option value="21:30">9:30 PM</option>
+                                <option value="22:00">10:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" th:field="*{description}" placeholder="Brief description of your shop" />
+                    </div>
+                    <div class="form-group">
+                        <label>UPI ID (for online payments)</label>
+                        <input type="text" th:field="*{upiId}" placeholder="e.g. shopname@upi" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">🏪 Register Shop</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" id="myshops">
+            <div class="card-header">
+                <h3>🏬 My Shops</h3>
+                <span class="badge-pill badge-blue" th:text="${shops.size()} + ' shops'"></span>
+            </div>
+            <div th:if="${shops.empty}" class="empty-state">
+                <div class="empty-icon">🏪</div><p>No shops yet. Register one above.</p>
+            </div>
+            <div class="shop-cards" th:if="${!shops.empty}">
+                <div class="shop-tile" th:each="shop : ${shops}">
+                    <div class="shop-tile-top">
+                        <div class="shop-tile-icon">🏪</div>
+                        <div class="shop-tile-info">
+                            <div class="shop-tile-name" th:text="${shop.name}"></div>
+                            <div><span class="tag" th:text="${shop.category}"></span></div>
+                        </div>
+                        <div class="shop-tile-badges">
+                            <span th:text="${shop.status}" th:class="${shop.status.name() == 'OPEN'} ? 'badge badge-open' : 'badge badge-closed'"></span>
+                            <span th:if="${shop.isApproved}" class="badge badge-approved">Approved</span>
+                            <span th:unless="${shop.isApproved}" class="badge badge-pending">Pending</span>
+                        </div>
+                    </div>
+                    <div class="shop-tile-meta">
+                        <span>🕐 <span class="shop-time" th:text="${shop.openTime} + ' – ' + ${shop.closeTime}"></span></span>
+                        <span>📍 <span th:text="${shop.address}"></span></span>
+                    </div>
+                    <div class="shop-tile-actions">
+                        <form th:if="${shop.isApproved}" th:action="@{/web/shopkeeper/shops/{id}/toggle(id=${shop.id})}" method="post" style="display:inline;">
+                            <button type="submit"
+                                th:class="${shop.status.name() == 'OPEN'} ? 'btn btn-warning btn-sm' : 'btn btn-success btn-sm'"
+                                th:text="${shop.status.name() == 'OPEN'} ? '🔴 Close Shop' : '🟢 Open Shop'">
+                            </button>
+                        </form>
+                        <button class="btn btn-outline btn-sm edit-shop-btn"
+                                th:data-id="${shop.id}"
+                                th:data-name="${shop.name}"
+                                th:data-category="${shop.category}"
+                                th:data-phone="${shop.phone}"
+                                th:data-address="${shop.address}"
+                                th:data-opentime="${shop.openTime}"
+                                th:data-closetime="${shop.closeTime}"
+                                th:data-description="${shop.description}"
+                                th:data-upiid="${shop.upiId}">
+                            ✏️ Edit
+                        </button>
+                        <a th:href="@{/web/shopkeeper/shops/{id}/inventory(id=${shop.id})}" class="btn btn-secondary btn-sm">📦 Inventory</a>
+                        <a th:href="@{/web/shopkeeper/shops/{id}/orders(id=${shop.id})}" class="btn btn-primary btn-sm">📋 Orders</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Shop Modal -->
+<div class="confirm-overlay" id="editShopModal">
+    <div class="confirm-box" style="max-width:520px;text-align:left;">
+        <h4 style="margin-bottom:20px;">✏️ Edit Shop</h4>
+        <form id="editShopForm" method="post">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Shop Name *</label>
+                    <input type="text" name="name" id="es_name" required />
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" name="category" id="es_category" />
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone" id="es_phone" />
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address" id="es_address" />
+                </div>
+                <div class="form-group">
+                    <label>Opening Time</label>
+                    <select name="openTime" id="es_openTime">
+                        <option value="">-- Select --</option>
+                        <option value="06:00">6:00 AM</option><option value="06:30">6:30 AM</option>
+                        <option value="07:00">7:00 AM</option><option value="07:30">7:30 AM</option>
+                        <option value="08:00">8:00 AM</option><option value="08:30">8:30 AM</option>
+                        <option value="09:00">9:00 AM</option><option value="09:30">9:30 AM</option>
+                        <option value="10:00">10:00 AM</option><option value="10:30">10:30 AM</option>
+                        <option value="11:00">11:00 AM</option><option value="11:30">11:30 AM</option>
+                        <option value="12:00">12:00 PM</option><option value="12:30">12:30 PM</option>
+                        <option value="13:00">1:00 PM</option><option value="13:30">1:30 PM</option>
+                        <option value="14:00">2:00 PM</option><option value="14:30">2:30 PM</option>
+                        <option value="15:00">3:00 PM</option><option value="15:30">3:30 PM</option>
+                        <option value="16:00">4:00 PM</option><option value="16:30">4:30 PM</option>
+                        <option value="17:00">5:00 PM</option><option value="17:30">5:30 PM</option>
+                        <option value="18:00">6:00 PM</option><option value="18:30">6:30 PM</option>
+                        <option value="19:00">7:00 PM</option><option value="19:30">7:30 PM</option>
+                        <option value="20:00">8:00 PM</option><option value="20:30">8:30 PM</option>
+                        <option value="21:00">9:00 PM</option><option value="21:30">9:30 PM</option>
+                        <option value="22:00">10:00 PM</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Closing Time</label>
+                    <select name="closeTime" id="es_closeTime">
+                        <option value="">-- Select --</option>
+                        <option value="06:00">6:00 AM</option><option value="06:30">6:30 AM</option>
+                        <option value="07:00">7:00 AM</option><option value="07:30">7:30 AM</option>
+                        <option value="08:00">8:00 AM</option><option value="08:30">8:30 AM</option>
+                        <option value="09:00">9:00 AM</option><option value="09:30">9:30 AM</option>
+                        <option value="10:00">10:00 AM</option><option value="10:30">10:30 AM</option>
+                        <option value="11:00">11:00 AM</option><option value="11:30">11:30 AM</option>
+                        <option value="12:00">12:00 PM</option><option value="12:30">12:30 PM</option>
+                        <option value="13:00">1:00 PM</option><option value="13:30">1:30 PM</option>
+                        <option value="14:00">2:00 PM</option><option value="14:30">2:30 PM</option>
+                        <option value="15:00">3:00 PM</option><option value="15:30">3:30 PM</option>
+                        <option value="16:00">4:00 PM</option><option value="16:30">4:30 PM</option>
+                        <option value="17:00">5:00 PM</option><option value="17:30">5:30 PM</option>
+                        <option value="18:00">6:00 PM</option><option value="18:30">6:30 PM</option>
+                        <option value="19:00">7:00 PM</option><option value="19:30">7:30 PM</option>
+                        <option value="20:00">8:00 PM</option><option value="20:30">8:30 PM</option>
+                        <option value="21:00">9:00 PM</option><option value="21:30">9:30 PM</option>
+                        <option value="22:00">10:00 PM</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" id="es_description" />
+            </div>
+            <div class="form-group">
+                <label>UPI ID</label>
+                <input type="text" name="upiId" id="es_upiId" placeholder="e.g. shopname@upi" />
+            </div>
+            <div class="confirm-actions">
+                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                <button type="button" class="btn btn-outline" onclick="closeEditShop()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="confirm-overlay" id="confirmDialog">
+    <div class="confirm-box">
+        <h4>Are you sure?</h4>
+        <p id="confirmMsg"></p>
+        <div class="confirm-actions">
+            <button class="btn btn-danger" onclick="confirmYes()">Yes, proceed</button>
+            <button class="btn btn-outline" onclick="confirmNo()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+<script>
+// Edit shop via data attributes
+document.addEventListener('click', e => {
+    const btn = e.target.closest('.edit-shop-btn');
+    if (!btn) return;
+    const d = btn.dataset;
+    document.getElementById('editShopForm').action = `/web/shopkeeper/shops/${d.id}/edit`;
+    document.getElementById('es_name').value        = d.name        || '';
+    document.getElementById('es_category').value   = d.category    || '';
+    document.getElementById('es_phone').value       = d.phone       || '';
+    document.getElementById('es_address').value     = d.address     || '';
+    document.getElementById('es_description').value = d.description || '';
+    document.getElementById('es_upiId').value       = d.upiid       || '';
+    document.getElementById('es_openTime').value    = d.opentime    || '';
+    document.getElementById('es_closeTime').value   = d.closetime   || '';
+    document.getElementById('editShopModal').classList.add('active');
+});
+function closeEditShop() { document.getElementById('editShopModal').classList.remove('active'); }
+</script>
+</html>

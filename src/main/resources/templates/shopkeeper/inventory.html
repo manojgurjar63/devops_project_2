@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Inventory Management · Society Shops</title>
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="dash-body">
+
+<button class="sidebar-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-brand">🏪 <span>Society Shops</span></div>
+    <div class="sidebar-role">Shopkeeper Panel</div>
+    <nav class="sidebar-nav">
+        <a th:href="@{/web/shopkeeper/dashboard}" class="nav-item"><span class="ni">📊</span> Dashboard</a>
+        <a href="#" class="nav-item active"><span class="ni">📦</span> Inventory</a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <a th:href="@{/web/logout}" class="sidebar-logout">⏻ Logout</a>
+</aside>
+
+<div class="dash-main">
+    <header class="dash-header">
+        <div>
+            <div class="dash-title">📦 Inventory Management</div>
+            <div class="dash-subtitle">Add and manage items for your shop</div>
+        </div>
+        <div class="header-right">
+            <a th:href="@{/web/shopkeeper/dashboard}" class="btn btn-outline btn-sm">← Back</a>
+            <div class="avatar" title="Shopkeeper">S</div>
+        </div>
+    </header>
+
+    <div class="dash-content">
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div class="stats-row">
+            <div class="stat-card sc-blue">
+                <div class="sc-icon">📦</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${items.size()}">0</div>
+                    <div class="sc-lbl">Total Items</div>
+                </div>
+            </div>
+            <div class="stat-card sc-green">
+                <div class="sc-icon">✅</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${availableCount}">0</div>
+                    <div class="sc-lbl">Available</div>
+                </div>
+            </div>
+            <div class="stat-card sc-red">
+                <div class="sc-icon">🚫</div>
+                <div class="sc-info">
+                    <div class="sc-val" th:text="${unavailableCount}">0</div>
+                    <div class="sc-lbl">Unavailable</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>➕ Add New Item</h3>
+                <button class="btn btn-outline btn-sm" onclick="toggleForm('itemForm')">▲ Hide Form</button>
+            </div>
+            <div id="itemForm" class="collapsible">
+                <form th:action="@{/web/shopkeeper/shops/{id}/inventory/add(id=${shopId})}" th:object="${itemRequest}" method="post">
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+                        <div class="form-group">
+                            <label>Item Name *</label>
+                            <input type="text" th:field="*{name}" placeholder="e.g. Basmati Rice" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Price (₹) *</label>
+                            <input type="number" th:field="*{price}" placeholder="e.g. 85.00" step="0.01" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Unit</label>
+                            <input type="text" th:field="*{unit}" placeholder="e.g. per kg" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" th:field="*{description}" placeholder="Optional description" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">➕ Add Item</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🛒 Current Inventory</h3>
+                <span class="badge-pill badge-blue" th:text="${items.size()} + ' items'"></span>
+            </div>
+            <div th:if="${items.empty}" class="empty-state">
+                <div class="empty-icon">📦</div><p>No items yet. Add your first item above.</p>
+            </div>
+            <div class="table-wrap" th:if="${!items.empty}">
+                <table>
+                    <thead><tr><th>Item</th><th>Price</th><th>Unit</th><th>Description</th><th>Stock</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        <tr th:each="item : ${items}">
+                            <td><strong th:text="${item.name}"></strong></td>
+                            <td><span class="price-tag" th:text="'₹' + ${item.price}"></span></td>
+                            <td th:text="${item.unit}"></td>
+                            <td th:text="${item.description}"></td>
+                            <td>
+                                <span th:if="${item.isAvailable}" class="badge badge-open">In Stock</span>
+                                <span th:unless="${item.isAvailable}" class="badge badge-closed">Out of Stock</span>
+                            </td>
+                            <td class="action-cell">
+                                <form th:action="@{/web/shopkeeper/inventory/{id}/toggle(id=${item.id})}" method="post" style="display:inline;">
+                                    <input type="hidden" name="shopId" th:value="${shopId}" />
+                                    <button type="submit"
+                                        th:class="${item.isAvailable} ? 'btn btn-warning btn-sm' : 'btn btn-success btn-sm'"
+                                        th:text="${item.isAvailable} ? '📦 Out of Stock' : '✅ In Stock'"></button>
+                                </form>
+                                <button class="btn btn-outline btn-sm edit-item-btn"
+                                        th:data-id="${item.id}"
+                                        th:data-shopid="${shopId}"
+                                        th:data-name="${item.name}"
+                                        th:data-price="${item.price}"
+                                        th:data-unit="${item.unit}"
+                                        th:data-description="${item.description}">
+                                    ✏️ Edit
+                                </button>
+                                <form th:action="@{/web/shopkeeper/inventory/{id}/delete(id=${item.id})}" method="post"
+                                      style="display:inline;" data-confirm="Delete this item permanently?">
+                                    <input type="hidden" name="shopId" th:value="${shopId}" />
+                                    <button type="submit" class="btn btn-danger btn-sm">🗑 Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div class="confirm-overlay" id="editItemModal">
+    <div class="confirm-box" style="max-width:460px;text-align:left;">
+        <h4 style="margin-bottom:20px;">✏️ Edit Item</h4>
+        <form id="editItemForm" method="post">
+            <input type="hidden" id="ei_shopId" name="shopId" />
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label>Item Name *</label>
+                    <input type="text" name="name" id="ei_name" required />
+                </div>
+                <div class="form-group">
+                    <label>Price (₹) *</label>
+                    <input type="number" name="price" id="ei_price" step="0.01" required />
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" name="unit" id="ei_unit" placeholder="e.g. per kg" />
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" name="description" id="ei_description" />
+                </div>
+            </div>
+            <div class="confirm-actions">
+                <button type="submit" class="btn btn-primary">💾 Save</button>
+                <button type="button" class="btn btn-outline" onclick="closeEditItem()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="confirm-overlay" id="confirmDialog">
+    <div class="confirm-box">
+        <h4>Are you sure?</h4>
+        <p id="confirmMsg"></p>
+        <div class="confirm-actions">
+            <button class="btn btn-danger" onclick="confirmYes()">Yes, delete</button>
+            <button class="btn btn-outline" onclick="confirmNo()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/css/dashboard.js}"></script>
+<script>
+// Edit item via data attributes
+document.addEventListener('click', e => {
+    const btn = e.target.closest('.edit-item-btn');
+    if (!btn) return;
+    const d = btn.dataset;
+    document.getElementById('editItemForm').action = `/web/shopkeeper/inventory/${d.id}/edit`;
+    document.getElementById('ei_shopId').value      = d.shopid      || '';
+    document.getElementById('ei_name').value        = d.name        || '';
+    document.getElementById('ei_price').value       = d.price       || '';
+    document.getElementById('ei_unit').value        = d.unit        || '';
+    document.getElementById('ei_description').value = d.description || '';
+    document.getElementById('editItemModal').classList.add('active');
+});
+function closeEditItem() { document.getElementById('editItemModal').classList.remove('active'); }
+</script>
+</html>
