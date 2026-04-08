@@ -1,0 +1,32 @@
+version: '3.8'
+
+services: 
+  app:
+    image: manojgurjar22/devops_project_2:v1
+    container_name: society_shops
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      spring.datasource.url: jdbc:mysql://mysql:3306/society_shops
+      spring.datasource.username: manoj
+      spring.datasource.password: Manoj@123
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: society_shops
+      MYSQL_USER: manoj
+      MYSQL_PASSWORD: Manoj@123
+    ports: 
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes: 
+  mysql_data:
